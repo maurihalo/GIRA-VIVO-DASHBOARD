@@ -1,543 +1,457 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gira Vivo Dashboard</title>
-
-  <!-- React + ReactDOM (UMD) -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
-  <!-- Babel para correr JSX en el navegador -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Recharts (UMD) -->
-  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
-
-  <style>
-    html, body { margin: 0; padding: 0; background: #0D0D14; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gira Vivo — Dashboard Financiero</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0D0D14;color:#E8E8F0;font-family:'DM Sans',sans-serif;min-height:100vh}
+  ::-webkit-scrollbar{width:5px}
+  ::-webkit-scrollbar-thumb{background:#2A2A3A;border-radius:3px}
+  .wrap{max-width:1200px;margin:0 auto;padding:28px 24px}
+  .header{border-bottom:1px solid #2A2A3A;padding-bottom:18px;margin-bottom:26px}
+  .header h1{font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:3px;line-height:1}
+  .header p{color:#7A7A9A;font-size:13px;margin-top:6px}
+  .badge{display:inline-block;background:#FF3B30;color:#fff;font-size:10px;font-weight:800;letter-spacing:2px;padding:3px 10px;border-radius:4px;margin-top:8px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+  .tab{background:#16161F;border:1px solid #2A2A3A;color:#7A7A9A;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;transition:all .2s}
+  .tab.active{background:#6C5CE7;border-color:#6C5CE7;color:#fff}
+  .tab:hover:not(.active){border-color:#6C5CE7;color:#E8E8F0}
+  .view{display:none}
+  .view.active{display:block}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+  .kpi{background:#16161F;border:1px solid #2A2A3A;border-radius:12px;padding:14px 18px}
+  .kpi-label{color:#7A7A9A;font-size:11px;margin-bottom:4px}
+  .kpi-val{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:1px}
+  .kpi-sub{font-size:12px;margin-top:2px;color:#00B894}
+  .card{background:#16161F;border:1px solid #2A2A3A;border-radius:14px;padding:20px 22px;margin-bottom:20px}
+  .card-title{font-size:16px;font-weight:700;margin-bottom:4px}
+  .card-sub{color:#7A7A9A;font-size:12px;margin-bottom:18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .chart-wrap{position:relative}
+  .stat-row{display:flex;gap:12px;margin-top:16px}
+  .stat-box{flex:1;background:#1E1E2E;border-radius:10px;padding:12px 14px;border:1px solid #2A2A3A}
+  .stat-name{font-size:11px;color:#7A7A9A;margin-bottom:4px}
+  .stat-val{font-size:13px;font-weight:700;color:#E8E8F0;margin-top:2px}
+  .pbar-wrap{margin-bottom:14px}
+  .pbar-header{display:flex;justify-content:space-between;margin-bottom:4px}
+  .pbar{background:#2A2A3A;border-radius:4px;height:8px;overflow:hidden}
+  .pbar-fill{height:100%;border-radius:4px}
+  .dot{width:10px;height:10px;border-radius:2px;display:inline-block;vertical-align:middle}
+  .tbl-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  thead tr{background:#1A1A26}
+  th{padding:10px 12px;color:#7A7A9A;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap;border-bottom:1px solid #2A2A3A;user-select:none}
+  th:hover{color:#E8E8F0}
+  th.sorted{color:#E8E8F0;background:#1E1E2E}
+  td{padding:9px 12px;border-bottom:1px solid rgba(42,42,58,.5)}
+  tr:nth-child(even){background:#13131C}
+  .chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.5px}
+  @media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+</style>
 </head>
-
 <body>
-  <div id="root"></div>
+<div class="wrap">
 
-  <script type="text/babel">
-// ✅ Globals (no imports)
-const { useState } = React;
-const {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  ScatterChart, Scatter, Cell, PieChart, Pie, LabelList
-} = Recharts;
+  <div class="header">
+    <h1>GIRA VIVO — INGRESOS &amp; EGRESOS</h1>
+    <p>Análisis financiero completo &nbsp;·&nbsp; 48 shows &nbsp;·&nbsp; 2025–2026</p>
+    <span class="badge">🔒 CONFIDENCIAL — ALFREDO OLIVAS</span>
+  </div>
 
-const EVENTOS = [
-  { ciudad: "RINCON DE ROMOS", fecha: "2025-01-19", ingresos: 10000000, gastos_ext: 0, gastos_int: 506352.93, utilidad: 9493647.07, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "LEON GTO (Ene)", fecha: "2025-01-31", ingresos: 17000000, gastos_ext: 0, gastos_int: 1425753.84, utilidad: 15574246.16, tamano: "Ciudad Grande", venue: "Estadio" },
-  { ciudad: "ZITACUARO", fecha: "2025-02-15", ingresos: 6537240, gastos_ext: 0, gastos_int: 906921.24, utilidad: 5630318.76, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "ARENA CDMX (Feb)", fecha: "2025-02-26", ingresos: 69587900, gastos_ext: 0, gastos_int: 29600300.34, utilidad: 39987599.66, tamano: "Ciudad Grande", venue: "Arena" },
-  { ciudad: "IGUALA", fecha: "2025-03-01", ingresos: 8150000, gastos_ext: 0, gastos_int: 629903.54, utilidad: 7520096.46, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "CIUDAD JUAREZ", fecha: "2025-03-15", ingresos: 18459828.9, gastos_ext: 0, gastos_int: 5463078.16, utilidad: 12996750.74, tamano: "Ciudad Grande", venue: "Estadio" },
-  { ciudad: "IRAPUATO", fecha: "2025-03-28", ingresos: 6565680, gastos_ext: 0, gastos_int: 1818941.64, utilidad: 4746738.36, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "GUADALAJARA (Abr)", fecha: "2025-04-04", ingresos: 28876170.71, gastos_ext: 11875864.24, gastos_int: 8383966.3, utilidad: 8616340.17, tamano: "Ciudad Grande", venue: "Arena" },
-  { ciudad: "CUERNAVACA", fecha: "2025-04-19", ingresos: 8596730, gastos_ext: 0, gastos_int: 1117431.55, utilidad: 7479298.45, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "TEPIC", fecha: "2025-04-09", ingresos: 11050022.5, gastos_ext: 0, gastos_int: 1769356.6, utilidad: 9280665.9, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "MONTERREY (Abr)", fecha: "2025-04-26", ingresos: 29977009.59, gastos_ext: 12322667.87, gastos_int: 4305165.86, utilidad: 13349175.86, tamano: "Ciudad Grande", venue: "Arena" },
-  { ciudad: "TEPATITLAN", fecha: "2025-05-01", ingresos: 7900000, gastos_ext: 0, gastos_int: 948433.03, utilidad: 6951566.97, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "MOCHIS", fecha: "2025-05-03", ingresos: 17106232.5, gastos_ext: 5356869.62, gastos_int: 8160710.1, utilidad: 3588652.78, tamano: "Ciudad Grande", venue: "Estadio" },
-  { ciudad: "AGUASCALIENTES", fecha: "2025-05-05", ingresos: 7000000, gastos_ext: 0, gastos_int: 899741.21, utilidad: 6100258.79, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "SAN JUAN LAGOS", fecha: "2025-05-17", ingresos: 6250000, gastos_ext: 0, gastos_int: 1026898.22, utilidad: 5223101.78, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "OAXACA", fecha: "2025-05-24", ingresos: 16243974, gastos_ext: 2973865.5, gastos_int: 2305741.2, utilidad: 10964367.3, tamano: "Ciudad Grande", venue: "Estadio" },
-  { ciudad: "PACHUQUILLA", fecha: "2025-06-07", ingresos: 10117340.1, gastos_ext: 3322734.87, gastos_int: 5580480.37, utilidad: 1214124.86, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "CHIHUAHUA", fecha: "2025-06-14", ingresos: 14333358.6, gastos_ext: 4064870.16, gastos_int: 5960088.15, utilidad: 4308400.29, tamano: "Ciudad Grande", venue: "Estadio" },
-  { ciudad: "MONTERREY (Jul)", fecha: "2025-07-03", ingresos: 10000000, gastos_ext: 0, gastos_int: 1217038.83, utilidad: 8782961.17, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "GOMEZ PALACIO", fecha: "2025-07-05", ingresos: 8500000, gastos_ext: 0, gastos_int: 1309171.2, utilidad: 7190828.8, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "SAN BUENAVENTURA", fecha: "2025-07-06", ingresos: 7000000, gastos_ext: 0, gastos_int: 1086595.71, utilidad: 5913404.29, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "TULANCINGO", fecha: "2025-08-02", ingresos: 8300000, gastos_ext: 0, gastos_int: 1220475.1, utilidad: 7079524.9, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "DURANGO", fecha: "2025-08-03", ingresos: 7700000, gastos_ext: 0, gastos_int: 899231.09, utilidad: 6800768.91, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "PARRAS COAHUILA", fecha: "2025-08-08", ingresos: 6365091.6, gastos_ext: 652890.6, gastos_int: 2329133.32, utilidad: 3383067.68, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "LAGOS DE MORENO", fecha: "2025-08-09", ingresos: 9000000, gastos_ext: 0, gastos_int: 908622.39, utilidad: 8091377.61, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "SAN LUIS POTOSI", fecha: "2025-08-27", ingresos: 8500000, gastos_ext: 0, gastos_int: 987409.83, utilidad: 7512590.17, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "IXTLAN DEL RIO", fecha: "2025-09-13", ingresos: 4500000, gastos_ext: 0, gastos_int: 898354.55, utilidad: 3601645.45, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "ZACATECAS", fecha: "2025-09-14", ingresos: 6208568, gastos_ext: 0, gastos_int: 786608.32, utilidad: 5421959.68, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "TIJUANA", fecha: "2025-09-19", ingresos: 7764400, gastos_ext: 0, gastos_int: 1113086.7, utilidad: 6651313.3, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "TORREON", fecha: "2025-09-20", ingresos: 8781300, gastos_ext: 2692978.2, gastos_int: 670791.09, utilidad: 5417530.71, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "SALTILLO", fecha: "2025-09-27", ingresos: 10632845.7, gastos_ext: 4122262.8, gastos_int: 4126582.35, utilidad: 2384000.55, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "TLAJOMULCO", fecha: "2025-09-28", ingresos: 8195881.6, gastos_ext: 1645804, gastos_int: 1078437.96, utilidad: 5471639.64, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "GDL (Oct 3)", fecha: "2025-10-03", ingresos: 7000000, gastos_ext: 0, gastos_int: 764600.64, utilidad: 6235399.36, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "GDL (Oct 7)", fecha: "2025-10-07", ingresos: 7000000, gastos_ext: 0, gastos_int: 789920.42, utilidad: 6210079.58, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "CHIMALHUACAN", fecha: "2025-10-10", ingresos: 12500000, gastos_ext: 0, gastos_int: 1243328.83, utilidad: 11256671.17, tamano: "Ciudad Grande", venue: "Estadio" },
-  { ciudad: "CD VICTORIA", fecha: "2025-10-17", ingresos: 8500000, gastos_ext: 0, gastos_int: 867876.13, utilidad: 7632123.87, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "PACHUCA", fecha: "2025-10-19", ingresos: 7000000, gastos_ext: 0, gastos_int: 943773.09, utilidad: 6056226.91, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "COLIMA", fecha: "2025-11-07", ingresos: 7922611.04, gastos_ext: 1286024, gastos_int: 1151297.97, utilidad: 5485289.07, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "TLAXCALA", fecha: "2025-11-14", ingresos: 7000000, gastos_ext: 0, gastos_int: 1037680.87, utilidad: 5962319.13, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "ACAPULCO", fecha: "2025-11-15", ingresos: 17000000, gastos_ext: 0, gastos_int: 2545223.05, utilidad: 14454776.95, tamano: "Ciudad Grande", venue: "Estadio" },
-  { ciudad: "TUXTLA", fecha: "2025-12-05", ingresos: 7000000, gastos_ext: 0, gastos_int: 1044694.7, utilidad: 5955305.3, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "TAPACHULA", fecha: "2025-12-06", ingresos: 7551314.1, gastos_ext: 0, gastos_int: 1739383.14, utilidad: 5811930.96, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "CANCUN", fecha: "2025-12-12", ingresos: 6169534.2, gastos_ext: 0, gastos_int: 2117372.07, utilidad: 4052162.13, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "MERIDA", fecha: "2025-12-13", ingresos: 9126042, gastos_ext: 0, gastos_int: 4740377.58, utilidad: 4385664.42, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "RIO BRAVO", fecha: "2025-12-14", ingresos: 7000000, gastos_ext: 0, gastos_int: 980591.33, utilidad: 6019408.67, tamano: "Ciudad Pequeña", venue: "Palenque" },
-  { ciudad: "CDMX (Dic)", fecha: "2025-12-20", ingresos: 94377789, gastos_ext: 26313852.12, gastos_int: 4597550.23, utilidad: 63466386.65, tamano: "Ciudad Grande", venue: "Arena" },
-  { ciudad: "LEON GTO (Ene26)", fecha: "2026-01-09", ingresos: 7000000, gastos_ext: 0, gastos_int: 859534.58, utilidad: 6140465.42, tamano: "Ciudad Grande", venue: "Palenque" },
-  { ciudad: "ARANDAS", fecha: "2026-01-10", ingresos: 7000000, gastos_ext: 0, gastos_int: 832733.86, utilidad: 6167266.14, tamano: "Ciudad Pequeña", venue: "Palenque" },
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('resumen',this)">📊 Resumen</button>
+    <button class="tab" onclick="switchTab('ciudades',this)">🏙️ Ciudades</button>
+    <button class="tab" onclick="switchTab('venues',this)">🎪 Venues</button>
+    <button class="tab" onclick="switchTab('timeline',this)">📅 Timeline</button>
+    <button class="tab" onclick="switchTab('tabla',this)">📋 Tabla</button>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="view-resumen" class="view active">
+    <div class="kpi-grid" id="kpis"></div>
+    <div class="card">
+      <div class="card-title">🏆 Top 15 Shows por Utilidad</div>
+      <div class="card-sub">Barra oscura = Ingresos &nbsp;·&nbsp; Barra color = Utilidad neta &nbsp;&nbsp;
+        <span class="dot" style="background:#F5A623"></span> Arena &nbsp;
+        <span class="dot" style="background:#4ECDC4"></span> Estadio &nbsp;
+        <span class="dot" style="background:#C7667E"></span> Palenque
+      </div>
+      <div class="chart-wrap" style="height:400px"><canvas id="cTop"></canvas></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">🥧 Utilidad Total por Venue</div>
+        <div class="card-sub">Participación en la utilidad global de la gira</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="cPie"></canvas></div>
+        <div id="pie-bars" style="margin-top:14px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ Ingresos vs Utilidad por Show</div>
+        <div class="card-sub">
+          <span class="dot" style="background:#F5A623"></span> Arena &nbsp;
+          <span class="dot" style="background:#4ECDC4"></span> Estadio &nbsp;
+          <span class="dot" style="background:#C7667E"></span> Palenque
+        </div>
+        <div class="chart-wrap" style="height:260px"><canvas id="cScatter"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CIUDADES -->
+  <div id="view-ciudades" class="view">
+    <div class="card">
+      <div class="card-title">📍 Ciudad Grande vs Ciudad Pequeña — Promedio por Show</div>
+      <div class="card-sub" id="ciudad-sub"></div>
+      <div class="chart-wrap" style="height:280px"><canvas id="cCiudad"></canvas></div>
+      <div class="stat-row" id="ciudad-stats"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏆 Top 15 Shows por Utilidad</div>
+      <div class="card-sub">
+        <span class="dot" style="background:#F5A623"></span> Arena &nbsp;
+        <span class="dot" style="background:#4ECDC4"></span> Estadio &nbsp;
+        <span class="dot" style="background:#C7667E"></span> Palenque
+      </div>
+      <div class="chart-wrap" style="height:400px"><canvas id="cTop2"></canvas></div>
+    </div>
+  </div>
+
+  <!-- VENUES -->
+  <div id="view-venues" class="view">
+    <div class="card">
+      <div class="card-title">🎪 Ingreso y Utilidad Promedio por Tipo de Venue</div>
+      <div class="card-sub">Comparativa de rentabilidad según el recinto</div>
+      <div class="chart-wrap" style="height:280px"><canvas id="cVenue"></canvas></div>
+      <div class="stat-row" id="venue-stats"></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">🥧 Distribución de Utilidad por Venue</div>
+        <div class="card-sub">Participación de cada tipo de recinto</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="cPie2"></canvas></div>
+        <div id="pie-bars2" style="margin-top:14px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ Ingresos vs Utilidad</div>
+        <div class="card-sub">
+          <span class="dot" style="background:#F5A623"></span> Arena &nbsp;
+          <span class="dot" style="background:#4ECDC4"></span> Estadio &nbsp;
+          <span class="dot" style="background:#C7667E"></span> Palenque
+        </div>
+        <div class="chart-wrap" style="height:260px"><canvas id="cScatter2"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div id="view-timeline" class="view">
+    <div class="card">
+      <div class="card-title">📅 Evolución Mensual — Ingresos y Utilidad</div>
+      <div class="card-sub">Totales acumulados por mes a lo largo de la gira</div>
+      <div class="chart-wrap" style="height:300px"><canvas id="cLine"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎤 Número de Shows por Mes</div>
+      <div class="card-sub">Densidad de presentaciones a lo largo del año</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="cShows"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div id="view-tabla" class="view">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:20px 22px 12px">
+        <div class="card-title">📋 Detalle Completo de Shows</div>
+        <div class="card-sub" style="margin-bottom:0">Haz clic en un encabezado para ordenar</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortTable('ciudad',this)" style="text-align:left">Ciudad</th>
+              <th onclick="sortTable('venue',this)" style="text-align:left">Venue</th>
+              <th onclick="sortTable('tamano',this)" style="text-align:left">Tamaño</th>
+              <th onclick="sortTable('ingresos',this)" style="text-align:right">Ingresos</th>
+              <th onclick="sortTable('gastos_ext',this)" style="text-align:right">Gastos Ext.</th>
+              <th onclick="sortTable('gastos_int',this)" style="text-align:right">Gastos Int.</th>
+              <th onclick="sortTable('utilidad',this)" class="sorted" style="text-align:right;padding-right:22px">Utilidad ↓</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* DATA */
+var EV = [
+  {ciudad:"RINCON DE ROMOS",   f:"2025-01",i:10000000,   ge:0,          gi:506352.93,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"LEON GTO (Ene)",    f:"2025-01",i:17000000,   ge:0,          gi:1425753.84,  t:"Ciudad Grande", v:"Estadio"},
+  {ciudad:"ZITACUARO",         f:"2025-02",i:6537240,    ge:0,          gi:906921.24,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"ARENA CDMX (Feb)",  f:"2025-02",i:69587900,   ge:0,          gi:29600300.34, t:"Ciudad Grande", v:"Arena"},
+  {ciudad:"IGUALA",            f:"2025-03",i:8150000,    ge:0,          gi:629903.54,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"CIUDAD JUAREZ",     f:"2025-03",i:18459828.9, ge:0,          gi:5463078.16,  t:"Ciudad Grande", v:"Estadio"},
+  {ciudad:"IRAPUATO",          f:"2025-03",i:6565680,    ge:0,          gi:1818941.64,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"GUADALAJARA (Abr)", f:"2025-04",i:28876170.71,ge:11875864.24,gi:8383966.3,   t:"Ciudad Grande", v:"Arena"},
+  {ciudad:"CUERNAVACA",        f:"2025-04",i:8596730,    ge:0,          gi:1117431.55,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"TEPIC",             f:"2025-04",i:11050022.5, ge:0,          gi:1769356.6,   t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"MONTERREY (Abr)",   f:"2025-04",i:29977009.59,ge:12322667.87,gi:4305165.86,  t:"Ciudad Grande", v:"Arena"},
+  {ciudad:"TEPATITLAN",        f:"2025-05",i:7900000,    ge:0,          gi:948433.03,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"MOCHIS",            f:"2025-05",i:17106232.5, ge:5356869.62, gi:8160710.1,   t:"Ciudad Grande", v:"Estadio"},
+  {ciudad:"AGUASCALIENTES",    f:"2025-05",i:7000000,    ge:0,          gi:899741.21,   t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"SAN JUAN LAGOS",    f:"2025-05",i:6250000,    ge:0,          gi:1026898.22,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"OAXACA",            f:"2025-05",i:16243974,   ge:2973865.5,  gi:2305741.2,   t:"Ciudad Grande", v:"Estadio"},
+  {ciudad:"PACHUQUILLA",       f:"2025-06",i:10117340.1, ge:3322734.87, gi:5580480.37,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"CHIHUAHUA",         f:"2025-06",i:14333358.6, ge:4064870.16, gi:5960088.15,  t:"Ciudad Grande", v:"Estadio"},
+  {ciudad:"MONTERREY (Jul)",   f:"2025-07",i:10000000,   ge:0,          gi:1217038.83,  t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"GOMEZ PALACIO",     f:"2025-07",i:8500000,    ge:0,          gi:1309171.2,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"SAN BUENAVENTURA",  f:"2025-07",i:7000000,    ge:0,          gi:1086595.71,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"TULANCINGO",        f:"2025-08",i:8300000,    ge:0,          gi:1220475.1,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"DURANGO",           f:"2025-08",i:7700000,    ge:0,          gi:899231.09,   t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"PARRAS COAHUILA",   f:"2025-08",i:6365091.6,  ge:652890.6,   gi:2329133.32,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"LAGOS DE MORENO",   f:"2025-08",i:9000000,    ge:0,          gi:908622.39,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"SAN LUIS POTOSI",   f:"2025-08",i:8500000,    ge:0,          gi:987409.83,   t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"IXTLAN DEL RIO",    f:"2025-09",i:4500000,    ge:0,          gi:898354.55,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"ZACATECAS",         f:"2025-09",i:6208568,    ge:0,          gi:786608.32,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"TIJUANA",           f:"2025-09",i:7764400,    ge:0,          gi:1113086.7,   t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"TORREON",           f:"2025-09",i:8781300,    ge:2692978.2,  gi:670791.09,   t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"SALTILLO",          f:"2025-09",i:10632845.7, ge:4122262.8,  gi:4126582.35,  t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"TLAJOMULCO",        f:"2025-09",i:8195881.6,  ge:1645804,    gi:1078437.96,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"GDL (Oct 3)",       f:"2025-10",i:7000000,    ge:0,          gi:764600.64,   t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"GDL (Oct 7)",       f:"2025-10",i:7000000,    ge:0,          gi:789920.42,   t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"CHIMALHUACAN",      f:"2025-10",i:12500000,   ge:0,          gi:1243328.83,  t:"Ciudad Grande", v:"Estadio"},
+  {ciudad:"CD VICTORIA",       f:"2025-10",i:8500000,    ge:0,          gi:867876.13,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"PACHUCA",           f:"2025-10",i:7000000,    ge:0,          gi:943773.09,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"COLIMA",            f:"2025-11",i:7922611.04, ge:1286024,    gi:1151297.97,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"TLAXCALA",          f:"2025-11",i:7000000,    ge:0,          gi:1037680.87,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"ACAPULCO",          f:"2025-11",i:17000000,   ge:0,          gi:2545223.05,  t:"Ciudad Grande", v:"Estadio"},
+  {ciudad:"TUXTLA",            f:"2025-12",i:7000000,    ge:0,          gi:1044694.7,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"TAPACHULA",         f:"2025-12",i:7551314.1,  ge:0,          gi:1739383.14,  t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"CANCUN",            f:"2025-12",i:6169534.2,  ge:0,          gi:2117372.07,  t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"MERIDA",            f:"2025-12",i:9126042,    ge:0,          gi:4740377.58,  t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"RIO BRAVO",         f:"2025-12",i:7000000,    ge:0,          gi:980591.33,   t:"Ciudad Pequeña",v:"Palenque"},
+  {ciudad:"CDMX (Dic)",        f:"2025-12",i:94377789,   ge:26313852.12,gi:4597550.23,  t:"Ciudad Grande", v:"Arena"},
+  {ciudad:"LEON GTO (Ene26)",  f:"2026-01",i:7000000,    ge:0,          gi:859534.58,   t:"Ciudad Grande", v:"Palenque"},
+  {ciudad:"ARANDAS",           f:"2026-01",i:7000000,    ge:0,          gi:832733.86,   t:"Ciudad Pequeña",v:"Palenque"},
 ];
+EV.forEach(function(e){e.u=e.i-e.ge-e.gi; e.ingresos=e.i; e.gastos_ext=e.ge; e.gastos_int=e.gi; e.utilidad=e.u; e.tamano=e.t; e.venue=e.v; e.fecha=e.f;});
 
-const fmtM = (v) => `$${(v / 1e6).toFixed(2)}M`;
-const fmtMshort = (v) => `$${(v / 1e6).toFixed(1)}M`;
+var VC={Arena:"#F5A623",Estadio:"#4ECDC4",Palenque:"#C7667E"};
+var fmtM=function(v){return"$"+(v/1e6).toFixed(2)+"M";};
+var fmtMs=function(v){return"$"+(v/1e6).toFixed(1)+"M";};
+var sum=function(arr,k){return arr.reduce(function(s,e){return s+e[k];},0);};
+var avg=function(arr,k){return sum(arr,k)/arr.length;};
+var GRID={color:"#2A2A3A"};
+var TIP={backgroundColor:"#1E1E2E",borderColor:"#2A2A3A",borderWidth:1,titleColor:"#E8E8F0",bodyColor:"#B0B0C8",padding:10};
 
-// COLORS
-const PALETTE = {
-  arena: "#F5A623",
-  estadio: "#4ECDC4",
-  palenque: "#C7667E",
-  grande: "#6C5CE7",
-  pequeña: "#00B894",
-  bg: "#0D0D14",
-  card: "#16161F",
-  border: "#2A2A3A",
-  text: "#E8E8F0",
-  muted: "#7A7A9A",
-};
+Chart.defaults.color="#7A7A9A";
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.font.size=11;
 
-// ── TOOLTIP CUSTOM ──────────────────────────────────────────────────────────
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: "#1E1E2E", border: `1px solid ${PALETTE.border}`, borderRadius: 10, padding: "10px 16px", fontSize: 12 }}>
-      <p style={{ color: PALETTE.text, fontWeight: 700, marginBottom: 6 }}>{label}</p>
-      {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color || PALETTE.text, margin: "2px 0" }}>
-          {p.name}: <strong>{fmtM(p.value)}</strong>
-        </p>
-      ))}
-    </div>
-  );
-};
-
-// ── CHART 1: Ciudades grandes vs pequeñas — Ingresos y Utilidad promedio ───
-function ChartTamano() {
-  const grandes = EVENTOS.filter(e => e.tamano === "Ciudad Grande");
-  const pequeñas = EVENTOS.filter(e => e.tamano === "Ciudad Pequeña");
-
-  const avg = (arr, key) => arr.reduce((s, e) => s + e[key], 0) / arr.length;
-  const sum = (arr, key) => arr.reduce((s, e) => s + e[key], 0);
-
-  const data = [
-    {
-      tipo: "Ciudad Grande",
-      "Ingreso Prom.": Math.round(avg(grandes, "ingresos")),
-      "Utilidad Prom.": Math.round(avg(grandes, "utilidad")),
-      "Total Ingresos": sum(grandes, "ingresos"),
-      "Total Utilidad": sum(grandes, "utilidad"),
-      eventos: grandes.length,
-    },
-    {
-      tipo: "Ciudad Pequeña",
-      "Ingreso Prom.": Math.round(avg(pequeñas, "ingresos")),
-      "Utilidad Prom.": Math.round(avg(pequeñas, "utilidad")),
-      "Total Ingresos": sum(pequeñas, "ingresos"),
-      "Total Utilidad": sum(pequeñas, "utilidad"),
-      eventos: pequeñas.length,
-    },
+/* KPIs */
+function buildKPIs(){
+  var tI=sum(EV,'i'),tU=sum(EV,'u'),tG=sum(EV,'ge')+sum(EV,'gi');
+  var best=EV.slice().sort(function(a,b){return b.u-a.u;})[0];
+  var kpis=[
+    {l:"💰 Ingresos Totales",v:fmtM(tI),c:"#6C5CE7"},
+    {l:"📈 Utilidad Total",  v:fmtM(tU),c:"#00B894"},
+    {l:"📉 Gastos Totales",  v:fmtM(tG),c:"#FF6B6B"},
+    {l:"📊 Margen Promedio", v:(tU/tI*100).toFixed(1)+"%",c:"#F5A623"},
+    {l:"🌟 Mejor Show",      v:best.ciudad,c:"#4ECDC4",sub:fmtM(best.u)},
+    {l:"🎤 Total Shows",     v:""+EV.length,c:"#C7667E"},
   ];
-
-  return (
-    <div style={styles.card}>
-      <h3 style={styles.cardTitle}>📍 Ciudad Grande vs Ciudad Pequeña — Promedio por Evento</h3>
-      <p style={styles.cardSub}>
-        Ciudades grandes: {grandes.length} eventos · Ciudades pequeñas: {pequeñas.length} eventos
-      </p>
-      <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={data} barGap={8} barCategoryGap="30%">
-          <CartesianGrid strokeDasharray="3 3" stroke={PALETTE.border} />
-          <XAxis dataKey="tipo" tick={{ fill: PALETTE.muted, fontSize: 13, fontFamily: "'Bebas Neue', cursive" }} />
-          <YAxis tickFormatter={fmtMshort} tick={{ fill: PALETTE.muted, fontSize: 11 }} />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ color: PALETTE.muted, fontSize: 12 }} />
-          <Bar dataKey="Ingreso Prom." fill={PALETTE.grande} radius={[6, 6, 0, 0]}>
-            <LabelList dataKey="Ingreso Prom." position="top" formatter={fmtMshort} style={{ fill: PALETTE.text, fontSize: 11 }} />
-          </Bar>
-          <Bar dataKey="Utilidad Prom." fill={PALETTE.pequeña} radius={[6, 6, 0, 0]}>
-            <LabelList dataKey="Utilidad Prom." position="top" formatter={fmtMshort} style={{ fill: PALETTE.text, fontSize: 11 }} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      {/* Totales */}
-      <div style={{ display: "flex", gap: 16, marginTop: 16 }}>
-        {data.map(d => (
-          <div key={d.tipo} style={{ flex: 1, background: "#1E1E2E", borderRadius: 10, padding: "12px 16px", border: `1px solid ${PALETTE.border}` }}>
-            <p style={{ color: PALETTE.muted, fontSize: 11, margin: 0 }}>{d.tipo}</p>
-            <p style={{ color: PALETTE.text, fontSize: 13, fontWeight: 700, margin: "4px 0" }}>Total ingresos: <span style={{ color: PALETTE.grande }}>{fmtM(d["Total Ingresos"])}</span></p>
-            <p style={{ color: PALETTE.text, fontSize: 13, fontWeight: 700, margin: 0 }}>Total utilidad: <span style={{ color: PALETTE.pequeña }}>{fmtM(d["Total Utilidad"])}</span></p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  document.getElementById('kpis').innerHTML=kpis.map(function(k){
+    return '<div class="kpi" style="border-left:4px solid '+k.c+'">'+
+      '<div class="kpi-label">'+k.l+'</div>'+
+      '<div class="kpi-val" style="color:'+k.c+';font-size:'+(k.l.indexOf('Mejor')>-1?'14':'22')+'px">'+k.v+'</div>'+
+      (k.sub?'<div class="kpi-sub">'+k.sub+'</div>':'')+
+    '</div>';
+  }).join('');
 }
 
-// ── CHART 2: Utilidad por tipo de venue ────────────────────────────────────
-function ChartVenue() {
-  const tipos = ["Arena", "Estadio", "Palenque"];
-  const colores = { Arena: PALETTE.arena, Estadio: PALETTE.estadio, Palenque: PALETTE.palenque };
-
-  const data = tipos.map(t => {
-    const evs = EVENTOS.filter(e => e.venue === t);
-    return {
-      venue: t,
-      "Utilidad Prom.": Math.round(evs.reduce((s, e) => s + e.utilidad, 0) / evs.length),
-      "Ingreso Prom.": Math.round(evs.reduce((s, e) => s + e.ingresos, 0) / evs.length),
-      "Total Utilidad": evs.reduce((s, e) => s + e.utilidad, 0),
-      eventos: evs.length,
-      color: colores[t],
-    };
+/* TOP 15 */
+function buildTop(id){
+  var top=EV.slice().sort(function(a,b){return b.u-a.u;}).slice(0,15);
+  new Chart(document.getElementById(id),{
+    type:'bar',
+    data:{
+      labels:top.map(function(e){return e.ciudad.length>16?e.ciudad.slice(0,15)+'…':e.ciudad;}),
+      datasets:[
+        {label:'Ingresos',data:top.map(function(e){return e.i;}),backgroundColor:'#2A2A4A',borderRadius:4},
+        {label:'Utilidad',data:top.map(function(e){return e.u;}),backgroundColor:top.map(function(e){return VC[e.v];}),borderRadius:4}
+      ]
+    },
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:Object.assign({},TIP,{callbacks:{label:function(c){return ' '+c.dataset.label+': '+fmtM(c.raw);}}})},
+      scales:{x:{grid:GRID,ticks:{callback:fmtMs}},y:{grid:{display:false}}}
+    }
   });
-
-  return (
-    <div style={styles.card}>
-      <h3 style={styles.cardTitle}>🎪 Utilidad por Tipo de Venue</h3>
-      <p style={styles.cardSub}>Promedio de utilidad neta por show según venue</p>
-      <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={data} barCategoryGap="35%">
-          <CartesianGrid strokeDasharray="3 3" stroke={PALETTE.border} />
-          <XAxis dataKey="venue" tick={{ fill: PALETTE.muted, fontSize: 14, fontFamily: "'Bebas Neue', cursive" }} />
-          <YAxis tickFormatter={fmtMshort} tick={{ fill: PALETTE.muted, fontSize: 11 }} />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="Utilidad Prom." radius={[8, 8, 0, 0]}>
-            {data.map((entry, i) => (
-              <Cell key={i} fill={entry.color} />
-            ))}
-            <LabelList dataKey="Utilidad Prom." position="top" formatter={fmtMshort} style={{ fill: PALETTE.text, fontSize: 12, fontWeight: 700 }} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-        {data.map(d => (
-          <div key={d.venue} style={{ flex: 1, background: "#1E1E2E", borderRadius: 10, padding: "12px 14px", borderTop: `3px solid ${d.color}` }}>
-            <p style={{ color: d.color, fontSize: 14, fontWeight: 800, margin: "0 0 4px", fontFamily: "'Bebas Neue', cursive", letterSpacing: 1 }}>{d.venue}</p>
-            <p style={{ color: PALETTE.muted, fontSize: 11, margin: "0 0 2px" }}>{d.eventos} shows</p>
-            <p style={{ color: PALETTE.text, fontSize: 12, margin: "0 0 2px" }}>Prom: <strong>{fmtM(d["Utilidad Prom."])}</strong></p>
-            <p style={{ color: PALETTE.text, fontSize: 12, margin: 0 }}>Total: <strong>{fmtM(d["Total Utilidad"])}</strong></p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
-// ── CHART 3: Ingresos vs Utilidad por ciudad (top ciudades) ────────────────
-function ChartTopCiudades() {
-  const sorted = [...EVENTOS].sort((a, b) => b.utilidad - a.utilidad).slice(0, 15);
-  const colores = { Arena: PALETTE.arena, Estadio: PALETTE.estadio, Palenque: PALETTE.palenque };
-
-  const data = sorted.map(e => ({
-    name: e.ciudad.length > 14 ? e.ciudad.slice(0, 13) + "…" : e.ciudad,
-    fullName: e.ciudad,
-    Ingresos: Math.round(e.ingresos),
-    Utilidad: Math.round(e.utilidad),
-    venue: e.venue,
-    color: colores[e.venue],
-  }));
-
-  return (
-    <div style={styles.card}>
-      <h3 style={styles.cardTitle}>🏆 Top 15 Eventos por Utilidad</h3>
-      <p style={styles.cardSub}>
-        <span style={{ color: PALETTE.arena }}>■ Arena</span>{"  "}
-        <span style={{ color: PALETTE.estadio }}>■ Estadio</span>{"  "}
-        <span style={{ color: PALETTE.palenque }}>■ Palenque</span>
-      </p>
-      <ResponsiveContainer width="100%" height={360}>
-        <BarChart data={data} layout="vertical" barGap={4} margin={{ left: 20, right: 30 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={PALETTE.border} horizontal={false} />
-          <XAxis type="number" tickFormatter={fmtMshort} tick={{ fill: PALETTE.muted, fontSize: 10 }} />
-          <YAxis type="category" dataKey="name" tick={{ fill: PALETTE.muted, fontSize: 10 }} width={110} />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="Ingresos" fill="#2A2A4A" radius={[0, 4, 4, 0]} />
-          <Bar dataKey="Utilidad" radius={[0, 4, 4, 0]}>
-            {data.map((entry, i) => (
-              <Cell key={i} fill={entry.color} />
-            ))}
-            <LabelList dataKey="Utilidad" position="right" formatter={fmtMshort} style={{ fill: PALETTE.text, fontSize: 10 }} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
+/* PIE */
+function buildPie(cid,bid){
+  var tipos=['Arena','Estadio','Palenque'];
+  var vals=tipos.map(function(t){return sum(EV.filter(function(e){return e.v===t;}),'u');});
+  var total=vals.reduce(function(a,b){return a+b;},0);
+  new Chart(document.getElementById(cid),{
+    type:'doughnut',
+    data:{labels:tipos,datasets:[{data:vals,backgroundColor:tipos.map(function(t){return VC[t];}),borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#7A7A9A',padding:12}},tooltip:Object.assign({},TIP,{callbacks:{label:function(c){return ' '+c.label+': '+fmtM(c.raw);}}})}}
+  });
+  document.getElementById(bid).innerHTML=tipos.map(function(t,i){
+    return '<div class="pbar-wrap">'+
+      '<div class="pbar-header"><span style="color:'+VC[t]+';font-weight:700;font-size:13px">'+t+'</span><span style="color:#E8E8F0;font-size:12px">'+((vals[i]/total)*100).toFixed(1)+'%</span></div>'+
+      '<div class="pbar"><div class="pbar-fill" style="background:'+VC[t]+';width:'+((vals[i]/total)*100)+'%"></div></div>'+
+      '<div style="color:#7A7A9A;font-size:11px;margin-top:2px">'+fmtM(vals[i])+'</div>'+
+    '</div>';
+  }).join('');
 }
 
-// ── CHART 4: Distribución por venue (pie) ─────────────────────────────────
-function ChartPie() {
-  const tipos = ["Arena", "Estadio", "Palenque"];
-  const colores = { Arena: PALETTE.arena, Estadio: PALETTE.estadio, Palenque: PALETTE.palenque };
-
-  const data = tipos.map(t => ({
-    name: t,
-    value: Math.round(EVENTOS.filter(e => e.venue === t).reduce((s, e) => s + e.utilidad, 0)),
-    color: colores[t],
-  }));
-
-  const total = data.reduce((s, d) => s + d.value, 0);
-
-  return (
-    <div style={styles.card}>
-      <h3 style={styles.cardTitle}>🥧 Distribución de Utilidad Total por Venue</h3>
-      <p style={styles.cardSub}>Participación de cada tipo de venue en la utilidad global</p>
-      <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        <ResponsiveContainer width="50%" height={220}>
-          <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={3} dataKey="value">
-              {data.map((entry, i) => (
-                <Cell key={i} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(v) => fmtM(v)} />
-          </PieChart>
-        </ResponsiveContainer>
-        <div style={{ flex: 1 }}>
-          {data.map(d => (
-            <div key={d.name} style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ color: d.color, fontWeight: 700, fontSize: 13 }}>{d.name}</span>
-                <span style={{ color: PALETTE.text, fontSize: 12 }}>{((d.value / total) * 100).toFixed(1)}%</span>
-              </div>
-              <div style={{ background: PALETTE.border, borderRadius: 4, height: 8, overflow: "hidden" }}>
-                <div style={{ background: d.color, width: `${(d.value / total) * 100}%`, height: "100%", borderRadius: 4 }} />
-              </div>
-              <p style={{ color: PALETTE.muted, fontSize: 11, margin: "3px 0 0" }}>{fmtM(d.value)}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+/* SCATTER */
+function buildScatter(id){
+  var tipos=['Arena','Estadio','Palenque'];
+  new Chart(document.getElementById(id),{
+    type:'scatter',
+    data:{datasets:tipos.map(function(t){return{label:t,data:EV.filter(function(e){return e.v===t;}).map(function(e){return{x:+(e.i/1e6).toFixed(1),y:+(e.u/1e6).toFixed(1),ciudad:e.ciudad};}),backgroundColor:VC[t]+'CC',pointRadius:7,pointHoverRadius:9};})},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#7A7A9A'}},tooltip:{backgroundColor:'#1E1E2E',borderColor:'#2A2A3A',borderWidth:1,titleColor:'#E8E8F0',bodyColor:'#B0B0C8',padding:10,callbacks:{title:function(items){return items[0]&&items[0].raw&&items[0].raw.ciudad?items[0].raw.ciudad:'';},label:function(c){return['Ingresos: $'+c.raw.x+'M','Utilidad: $'+c.raw.y+'M'];}}}},
+      scales:{x:{grid:GRID,title:{display:true,text:'Ingresos ($M)',color:'#7A7A9A'}},y:{grid:GRID,title:{display:true,text:'Utilidad ($M)',color:'#7A7A9A'}}}
+    }
+  });
 }
 
-// ── CHART 5: Scatter ingresos vs utilidad coloreado por venue ──────────────
-function ChartScatter() {
-  const colores = { Arena: PALETTE.arena, Estadio: PALETTE.estadio, Palenque: PALETTE.palenque };
-
-  const data = EVENTOS.map(e => ({
-    x: Math.round(e.ingresos / 1e6 * 10) / 10,
-    y: Math.round(e.utilidad / 1e6 * 10) / 10,
-    venue: e.venue,
-    ciudad: e.ciudad,
-    color: colores[e.venue],
-  }));
-
-  const ScatterTooltip = ({ active, payload }) => {
-    if (!active || !payload?.length) return null;
-    const d = payload[0]?.payload;
-    return (
-      <div style={{ background: "#1E1E2E", border: `1px solid ${PALETTE.border}`, borderRadius: 8, padding: "8px 12px", fontSize: 12 }}>
-        <p style={{ color: d?.color, fontWeight: 700, margin: "0 0 4px" }}>{d?.ciudad}</p>
-        <p style={{ color: PALETTE.muted, margin: 0 }}>Ingresos: <strong style={{ color: PALETTE.text }}>${d?.x}M</strong></p>
-        <p style={{ color: PALETTE.muted, margin: 0 }}>Utilidad: <strong style={{ color: d?.color }}>${d?.y}M</strong></p>
-      </div>
-    );
-  };
-
-  return (
-    <div style={styles.card}>
-      <h3 style={styles.cardTitle}>⚡ Ingresos vs Utilidad por Evento</h3>
-      <p style={styles.cardSub}>
-        Cada punto = un show. <span style={{ color: PALETTE.arena }}>■ Arena</span>{"  "}
-        <span style={{ color: PALETTE.estadio }}>■ Estadio</span>{"  "}
-        <span style={{ color: PALETTE.palenque }}>■ Palenque</span>
-      </p>
-      <ResponsiveContainer width="100%" height={280}>
-        <ScatterChart>
-          <CartesianGrid strokeDasharray="3 3" stroke={PALETTE.border} />
-          <XAxis dataKey="x" name="Ingresos" unit="M" tick={{ fill: PALETTE.muted, fontSize: 10 }} label={{ value: "Ingresos ($M)", position: "insideBottom", offset: -4, fill: PALETTE.muted, fontSize: 11 }} />
-          <YAxis dataKey="y" name="Utilidad" unit="M" tick={{ fill: PALETTE.muted, fontSize: 10 }} label={{ value: "Utilidad ($M)", angle: -90, position: "insideLeft", fill: PALETTE.muted, fontSize: 11 }} />
-          <Tooltip content={<ScatterTooltip />} />
-          <Scatter data={data}>
-            {data.map((entry, i) => (
-              <Cell key={i} fill={entry.color} fillOpacity={0.85} />
-            ))}
-          </Scatter>
-        </ScatterChart>
-      </ResponsiveContainer>
-    </div>
-  );
+/* CIUDAD */
+function buildCiudad(){
+  var G=EV.filter(function(e){return e.t==='Ciudad Grande';});
+  var CH=EV.filter(function(e){return e.t==='Ciudad Pequeña';});
+  document.getElementById('ciudad-sub').textContent=G.length+' ciudades grandes · '+CH.length+' ciudades pequeñas';
+  new Chart(document.getElementById('cCiudad'),{
+    type:'bar',
+    data:{
+      labels:['Ciudad Grande','Ciudad Pequeña'],
+      datasets:[
+        {label:'Ingreso Prom.',data:[avg(G,'i'),avg(CH,'i')],backgroundColor:['#6C5CE7','#6C5CE7AA'],borderRadius:6},
+        {label:'Utilidad Prom.',data:[avg(G,'u'),avg(CH,'u')],backgroundColor:['#00B894','#00B894AA'],borderRadius:6}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#7A7A9A'}},tooltip:Object.assign({},TIP,{callbacks:{label:function(c){return ' '+c.dataset.label+': '+fmtM(c.raw);}}})},
+      scales:{x:{grid:{display:false}},y:{grid:GRID,ticks:{callback:fmtMs}}}
+    }
+  });
+  document.getElementById('ciudad-stats').innerHTML=[
+    {l:'Ciudad Grande',n:G.length,tI:sum(G,'i'),tU:sum(G,'u'),c:'#6C5CE7'},
+    {l:'Ciudad Pequeña',n:CH.length,tI:sum(CH,'i'),tU:sum(CH,'u'),c:'#00B894'}
+  ].map(function(d){
+    return '<div class="stat-box" style="border-left:4px solid '+d.c+'">'+
+      '<div class="stat-name">'+d.l+' · '+d.n+' shows</div>'+
+      '<div class="stat-val">Ingresos: <span style="color:'+d.c+'">'+fmtM(d.tI)+'</span></div>'+
+      '<div class="stat-val">Utilidad: <span style="color:#00B894">'+fmtM(d.tU)+'</span></div>'+
+    '</div>';
+  }).join('');
 }
 
-// ── KPI CARDS ──────────────────────────────────────────────────────────────
-function KPIs() {
-  const totalIngresos = EVENTOS.reduce((s, e) => s + e.ingresos, 0);
-  const totalUtilidad = EVENTOS.reduce((s, e) => s + e.utilidad, 0);
-  const totalGastos = EVENTOS.reduce((s, e) => s + e.gastos_ext + e.gastos_int, 0);
-  const margen = (totalUtilidad / totalIngresos * 100).toFixed(1);
-  const mejorEvento = [...EVENTOS].sort((a, b) => b.utilidad - a.utilidad)[0];
-
-  const kpis = [
-    { label: "Ingresos Totales", value: fmtM(totalIngresos), color: PALETTE.grande, icon: "💰" },
-    { label: "Utilidad Total", value: fmtM(totalUtilidad), color: PALETTE.pequeña, icon: "📈" },
-    { label: "Gastos Totales", value: fmtM(totalGastos), color: "#FF6B6B", icon: "📉" },
-    { label: "Margen Promedio", value: `${margen}%`, color: PALETTE.arena, icon: "📊" },
-    { label: "Mejor Show", value: mejorEvento.ciudad, color: PALETTE.estadio, icon: "🌟", sub: fmtM(mejorEvento.utilidad) },
-    { label: "Total de Shows", value: `${EVENTOS.length}`, color: PALETTE.palenque, icon: "🎤" },
-  ];
-
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
-      {kpis.map(k => (
-        <div key={k.label} style={{ background: PALETTE.card, border: `1px solid ${PALETTE.border}`, borderRadius: 12, padding: "14px 18px", borderLeft: `4px solid ${k.color}` }}>
-          <p style={{ color: PALETTE.muted, fontSize: 11, margin: "0 0 4px" }}>{k.icon} {k.label}</p>
-          <p style={{ color: k.color, fontSize: k.label === "Mejor Show" ? 14 : 18, fontWeight: 800, margin: 0, fontFamily: "'Bebas Neue', cursive", letterSpacing: 1 }}>{k.value}</p>
-          {k.sub && <p style={{ color: PALETTE.pequeña, fontSize: 12, margin: "2px 0 0" }}>{k.sub}</p>}
-        </div>
-      ))}
-    </div>
-  );
+/* VENUE */
+function buildVenue(){
+  var tipos=['Arena','Estadio','Palenque'];
+  var data=tipos.map(function(t){var evs=EV.filter(function(e){return e.v===t;});return{n:evs.length,aU:avg(evs,'u'),aI:avg(evs,'i'),tU:sum(evs,'u')};});
+  new Chart(document.getElementById('cVenue'),{
+    type:'bar',
+    data:{
+      labels:tipos,
+      datasets:[
+        {label:'Ingreso Prom.',data:data.map(function(d){return d.aI;}),backgroundColor:tipos.map(function(t){return VC[t]+'55';}),borderRadius:8},
+        {label:'Utilidad Prom.',data:data.map(function(d){return d.aU;}),backgroundColor:tipos.map(function(t){return VC[t];}),borderRadius:8}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#7A7A9A'}},tooltip:Object.assign({},TIP,{callbacks:{label:function(c){return ' '+c.dataset.label+': '+fmtM(c.raw);}}})},
+      scales:{x:{grid:{display:false}},y:{grid:GRID,ticks:{callback:fmtMs}}}
+    }
+  });
+  document.getElementById('venue-stats').innerHTML=tipos.map(function(t,i){
+    return '<div class="stat-box" style="border-top:3px solid '+VC[t]+'">'+
+      '<div style="color:'+VC[t]+';font-family:\'Bebas Neue\',cursive;font-size:16px;letter-spacing:1px;margin-bottom:4px">'+t+'</div>'+
+      '<div style="font-size:11px;color:#7A7A9A">'+data[i].n+' shows</div>'+
+      '<div class="stat-val">Prom: <span style="color:'+VC[t]+'">'+fmtM(data[i].aU)+'</span></div>'+
+      '<div class="stat-val">Total: <span style="color:#E8E8F0">'+fmtM(data[i].tU)+'</span></div>'+
+    '</div>';
+  }).join('');
 }
 
-// ── STYLES ─────────────────────────────────────────────────────────────────
-const styles = {
-  root: {
-    background: PALETTE.bg,
-    minHeight: "100vh",
-    fontFamily: "'DM Sans', sans-serif",
-    color: PALETTE.text,
-    padding: "24px 28px",
-  },
-  header: {
-    marginBottom: 28,
-    borderBottom: `1px solid ${PALETTE.border}`,
-    paddingBottom: 18,
-  },
-  title: {
-    fontFamily: "'Bebas Neue', cursive",
-    fontSize: 36,
-    letterSpacing: 3,
-    color: PALETTE.text,
-    margin: 0,
-  },
-  subtitle: {
-    color: PALETTE.muted,
-    fontSize: 13,
-    margin: "6px 0 0",
-  },
-  confidential: {
-    display: "inline-block",
-    background: "#FF3B30",
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: 800,
-    letterSpacing: 2,
-    padding: "3px 10px",
-    borderRadius: 4,
-    marginTop: 8,
-  },
-  card: {
-    background: PALETTE.card,
-    border: `1px solid ${PALETTE.border}`,
-    borderRadius: 14,
-    padding: "20px 22px",
-    marginBottom: 20,
-  },
-  cardTitle: {
-    color: PALETTE.text,
-    fontSize: 16,
-    fontWeight: 700,
-    margin: "0 0 4px",
-  },
-  cardSub: {
-    color: PALETTE.muted,
-    fontSize: 12,
-    margin: "0 0 16px",
-  },
-  grid2: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 20,
-  },
-};
-
-// ── APP ────────────────────────────────────────────────────────────────────
-function App() {
-  const [tab, setTab] = useState("resumen");
-
-  return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700;800&display=swap');
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 6px; } 
-        ::-webkit-scrollbar-track { background: #0D0D14; }
-        ::-webkit-scrollbar-thumb { background: #2A2A3A; border-radius: 3px; }
-      `}</style>
-      <div style={styles.root}>
-        {/* HEADER */}
-        <div style={styles.header}>
-          <h1 style={styles.title}>GIRA VIVO — INGRESOS & EGRESOS</h1>
-          <p style={styles.subtitle}>Análisis financiero completo · 48 shows · 2025–2026</p>
-          <span style={styles.confidential}>🔒 CONFIDENCIAL — ALFREDO OLIVAS</span>
-        </div>
-
-        {/* TABS */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-          {[
-            { id: "resumen", label: "📊 Resumen" },
-            { id: "ciudades", label: "🏙️ Ciudades" },
-            { id: "venues", label: "🎪 Venues" },
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={{
-                background: tab === t.id ? PALETTE.grande : PALETTE.card,
-                border: `1px solid ${tab === t.id ? PALETTE.grande : PALETTE.border}`,
-                color: tab === t.id ? "#fff" : PALETTE.muted,
-                padding: "8px 18px",
-                borderRadius: 8,
-                cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
-                fontWeight: 600,
-                fontSize: 13,
-                transition: "all 0.2s",
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* CONTENT */}
-        {tab === "resumen" && (
-          <>
-            <KPIs />
-            <ChartTopCiudades />
-            <div style={styles.grid2}>
-              <ChartPie />
-              <ChartScatter />
-            </div>
-          </>
-        )}
-        {tab === "ciudades" && (
-          <>
-            <ChartTamano />
-            <ChartTopCiudades />
-          </>
-        )}
-        {tab === "venues" && (
-          <>
-            <ChartVenue />
-            <div style={styles.grid2}>
-              <ChartPie />
-              <ChartScatter />
-            </div>
-          </>
-        )}
-      </div>
-    </>
-  );
+/* TIMELINE */
+function buildTimeline(){
+  var meses={};
+  EV.forEach(function(e){if(!meses[e.f])meses[e.f]={utilidad:0,ingresos:0,shows:0};meses[e.f].utilidad+=e.u;meses[e.f].ingresos+=e.i;meses[e.f].shows++;});
+  var keys=Object.keys(meses).sort();
+  var labels=keys.map(function(k){return k.replace('2025-','').replace('2026-','26/');});
+  new Chart(document.getElementById('cLine'),{
+    type:'line',
+    data:{labels:labels,datasets:[
+      {label:'Ingresos',data:keys.map(function(k){return meses[k].ingresos;}),borderColor:'#6C5CE7',backgroundColor:'#6C5CE720',fill:true,tension:.3,pointRadius:5},
+      {label:'Utilidad',data:keys.map(function(k){return meses[k].utilidad;}),borderColor:'#00B894',backgroundColor:'#00B89420',fill:true,tension:.3,pointRadius:5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7A7A9A'}},tooltip:Object.assign({},TIP,{callbacks:{label:function(c){return ' '+c.dataset.label+': '+fmtM(c.raw);}}})},scales:{x:{grid:GRID},y:{grid:GRID,ticks:{callback:fmtMs}}}}
+  });
+  new Chart(document.getElementById('cShows'),{
+    type:'bar',
+    data:{labels:labels,datasets:[{label:'Shows',data:keys.map(function(k){return meses[k].shows;}),backgroundColor:'#C7667E',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TIP},scales:{x:{grid:{display:false}},y:{grid:GRID,ticks:{stepSize:1}}}}
+  });
 }
 
-// ✅ Render
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+/* TABLE */
+var tblSort={key:'u',dir:-1};
+function sortTable(key,th){
+  if(tblSort.key===key)tblSort.dir*=-1; else tblSort={key:key,dir:-1};
+  document.querySelectorAll('th').forEach(function(t){t.classList.remove('sorted');});
+  th.classList.add('sorted');
+  renderTable();
+}
+function renderTable(){
+  var tc={'Ciudad Grande':'#6C5CE7','Ciudad Pequeña':'#00B894'};
+  var sorted=EV.slice().sort(function(a,b){var av=a[tblSort.key],bv=b[tblSort.key];return tblSort.dir*(av>bv?1:av<bv?-1:0);});
+  document.getElementById('tableBody').innerHTML=sorted.map(function(e){
+    var m=(e.u/e.i*100).toFixed(0);
+    return '<tr>'+
+      '<td style="padding-left:22px;color:#E8E8F0;font-weight:600">'+e.ciudad+'</td>'+
+      '<td><span class="chip" style="background:'+VC[e.v]+'22;color:'+VC[e.v]+'">'+e.v+'</span></td>'+
+      '<td style="color:'+tc[e.t]+';font-size:11px">'+e.t+'</td>'+
+      '<td style="text-align:right;color:#7A7A9A">'+fmtM(e.i)+'</td>'+
+      '<td style="text-align:right;color:#FF6B6B">'+(e.ge>0?fmtM(e.ge):'—')+'</td>'+
+      '<td style="text-align:right;color:#FF8E6B">'+fmtM(e.gi)+'</td>'+
+      '<td style="text-align:right;padding-right:22px"><span style="color:'+VC[e.v]+';font-weight:800">'+fmtM(e.u)+'</span><span style="color:#7A7A9A;font-size:10px;margin-left:5px">('+m+'%)</span></td>'+
+    '</tr>';
+  }).join('');
+}
 
-  </script>
+/* TABS */
+function switchTab(id,btn){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('view-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* INIT */
+window.addEventListener('DOMContentLoaded',function(){
+  buildKPIs();
+  buildTop('cTop'); buildTop('cTop2');
+  buildPie('cPie','pie-bars'); buildPie('cPie2','pie-bars2');
+  buildScatter('cScatter'); buildScatter('cScatter2');
+  buildCiudad();
+  buildVenue();
+  buildTimeline();
+  renderTable();
+});
+</script>
 </body>
 </html>
